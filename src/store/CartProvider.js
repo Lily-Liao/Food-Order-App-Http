@@ -7,35 +7,40 @@ const DEFAULT_CART_STATE = {
 };
 
 const cartReducer = (state, action) => {
-  let currTotalAmount = 0;
+  let currTotalAmount = state.totalAmount;
+  let currentCartItems = state.items;
+  let newCartItems = [...state.items];
+  let newTotalPrice;
   switch (action.type) {
     case "ADD":
-      let isExist = state.items.findIndex(
+      let isExist = currentCartItems.findIndex(
         (item) => item.id === action.items.id
       );
       if (isExist === -1) {
-        state.items.push(action.items);
+        newCartItems.push(action.items);
       } else {
-        state.items[isExist].amount += action.items.amount;
-        state.items[isExist].amount =
-          state.items[isExist].amount > 5 ? 5 : state.items[isExist].amount;
+        let updateCartItem = {
+          ...currentCartItems[isExist],
+          amount: currentCartItems[isExist].amount + action.items.amount
+        }
+        newCartItems[isExist] = updateCartItem;
       }
-      currTotalAmount = state.items.reduce((accumulator, currentValue) => {
-        return accumulator + currentValue.amount * currentValue.price;
-      }, 0);
-      state.totalAmount = Math.round(currTotalAmount * 100) / 100;
-      return { items: state.items, totalAmount: state.totalAmount };
+      currTotalAmount += action.items.amount * action.items.price ;
+      newTotalPrice = Math.round(currTotalAmount * 100) / 100
+      return { items: newCartItems, totalAmount: newTotalPrice };
     case "REMOVE":
-      let itemIndex = state.items.findIndex((item) => item.id === action.id);
-      state.items[itemIndex].amount -= 1;
-      if (state.items[itemIndex].amount === 0) {
-        state.items.splice(itemIndex, 1);
+      let itemIndex = currentCartItems.findIndex((item) => item.id === action.id);
+      let updateCartItem = {
+        ...currentCartItems[itemIndex],
+        amount: currentCartItems[itemIndex].amount - 1
       }
-      currTotalAmount = state.items.reduce((accumulator, currentValue) => {
-        return accumulator + currentValue.amount * currentValue.price;
-      }, 0);
-      state.totalAmount = Math.round(currTotalAmount * 100) / 100;
-      return { items: state.items, totalAmount: state.totalAmount };
+      if (updateCartItem.amount === 0) {
+        newCartItems.splice(itemIndex, 1);
+      }
+      newCartItems[itemIndex] = updateCartItem;
+      currTotalAmount -= newCartItems[itemIndex].price ;
+      newTotalPrice = Math.round(currTotalAmount * 100) / 100
+      return { items: newCartItems, totalAmount: newTotalPrice };
     case "CLEAR":
       return { items: [], totalAmount: 0 };
     default:
